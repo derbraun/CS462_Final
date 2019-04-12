@@ -1,20 +1,37 @@
-// deliveryRequest 
+Delivery Request
+Drivers listen for - driver:delivery_request
 {
     "request": {
-        "orderId": "number",
-        "pickUpTime": "time", // from time:now() in KRL
-        "requiredDeliveryTime": "time", // from time:now() in KRL
+        "orderId": "string",
+        "pickUpTime": "string", // from time:now() in KRL
+        "requiredDeliveryTime": "string", // from time:now() in KRL
         "deliveryLocation": {"lat": "number", "long": "number"}, // we probably don't actually need this
         "sendBidTo": "string", // stores channel id
         "storeLocation": {"lat": "number", "long": "number"}
     }
 }
 
-// bid 
+Bid
+Stores listen for - store:new_bid
 {
     "bid": {
-        "orderId" : "number",
+        "orderId" : "string",
         "bidAmount": "number",
         "driverRank": "number" // 0 - 100? 
+    }
+}
+
+Driver Assigned
+Drivers listen for - driver:assigned_delivery
+{
+    "orderId": "string"
+}
+
+Order Delivered
+Stores listen for - store:order_delivered
+{
+    "delivery": {
+        "time": "string", // from time:now()
+        "image": "strin"g // a fake url or something?
     }
 }
