@@ -1,0 +1,20 @@
+// deliveryRequest 
+{
+    "request": {
+        "orderId": "number",
+        "pickUpTime": "time", // from time:now() in KRL
+        "requiredDeliveryTime": "time", // from time:now() in KRL
+        "deliveryLocation": {"lat": "number", "long": "number"}, // we might not actually need this
+        "sendBidTo": "string", // stores channel id
+        "storeLocation": {"lat": "number", "long": "number"}
+    }
+}
+
+// bid 
+{
+    "bid": {
+        "orderId" : "number",
+        "bidAmount": "number",
+        "driverRank": "number" // 0 - 100? 
+    }
+}
