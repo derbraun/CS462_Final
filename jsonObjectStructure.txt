@@ -4,7 +4,7 @@
         "orderId": "number",
         "pickUpTime": "time", // from time:now() in KRL
         "requiredDeliveryTime": "time", // from time:now() in KRL
-        "deliveryLocation": {"lat": "number", "long": "number"}, // we might not actually need this
+        "deliveryLocation": {"lat": "number", "long": "number"}, // we probably don't actually need this
         "sendBidTo": "string", // stores channel id
         "storeLocation": {"lat": "number", "long": "number"}
     }
