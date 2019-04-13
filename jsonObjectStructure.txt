@@ -6,7 +6,7 @@ Drivers listen for - driver:delivery_request
         "pickUpTime": "string", // from time:now() in KRL
         "requiredDeliveryTime": "string", // from time:now() in KRL
         "deliveryLocation": {"lat": "number", "long": "number"}, // we probably don't actually need this
-        "sendBidTo": "string", // stores channel id
+        "sendBidTo": "string", // stores channel id. Send the bid here
         "storeLocation": {"lat": "number", "long": "number"}
     }
 }
@@ -31,6 +31,7 @@ Order Delivered
 Stores listen for - store:order_delivered
 {
     "delivery": {
+        "orderId": "string",
         "time": "string", // from time:now()
         "image": "strin"g // a fake url or something?
     }
