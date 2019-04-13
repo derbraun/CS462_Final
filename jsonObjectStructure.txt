@@ -32,7 +32,7 @@ Stores listen for - store:order_delivered
 {
     "delivery": {
         "orderId": "string",
-        "time": "string", // from time:now()
+        "delivered_at": "string", // time of delivery from time:now()
         "image": "strin"g // a fake url or something?
     }
 }
