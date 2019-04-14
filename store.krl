@@ -7,14 +7,13 @@ ruleset store {
       with account_sid = keys:twilio{"account_sid"}
         auth_token = keys:twilio{"auth_token"}
     
-    shares __testing, getProfile, getOrders, timeTest
+    shares __testing, getProfile, getOrders
   }
   global {
     __testing = { "queries":
       [ { "name": "__testing" },
-        { "name": "getProfile"},
-        { "name": "getOrders"},
-        { "name": "timeTest"}
+        { "name": "getProfile" },
+        { "name": "getOrders" }
       //, { "name": "entry", "args": [ "key" ] }
       ] , "events":
       [ //{ "domain": "d1", "type": "t1" }
@@ -28,9 +27,6 @@ ruleset store {
     // Testing Functions *******************************************************
     getProfile = function(){ent:profile}
     getOrders = function(){ent:order_tracker}
-    timeTest = function(){
-      time:add(time:now(), {"minutes": -10})
-    }
     // *************************************************************************
     
     makeRequest = function(order){
@@ -44,11 +40,17 @@ ruleset store {
       }
     }
     
-    // return null if no bids available
     getRandomBid = function(order){
       bids = order{"bids"};
       bids.length() > 0 => 
         bids[random:integer(bids.length()-1)]
+        | null;
+    }
+    
+    getLowestBid = function(order){
+      bids = order{"bids"}.klog("BIDS");
+      bids.length() > 0 => 
+        bids.reduce(function(f,s){f{["bid","bidAmoung"]} < s{["bid","bidAmoung"]} => f | s })
         | null;
     }
   }
@@ -80,7 +82,8 @@ ruleset store {
     select when utility pulse where ent:profile{"auto_assign_driver"}
     foreach ent:order_tracker.filter(function(v,k){v{"assigned_driver"}.isnull()}) setting (order) // get orders without an assigned_driver
     pre {
-      selected_bid = getRandomBid(order);
+      // selected_bid = getRandomBid(order);
+      selected_bid = getLowestBid(order);
     }
     
     if selected_bid then
@@ -110,7 +113,7 @@ ruleset store {
 
     }
   }
-    
+  
   rule send_notification {
     select when utility notify_customer
     
