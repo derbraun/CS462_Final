@@ -2,6 +2,7 @@ ruleset flower_gossip {
 
   meta {
     use module io.picolabs.subscription alias Subscriptions
+    use module io.picolabs.wrangler alias Wrangler
   }
   
   global {
@@ -203,4 +204,32 @@ ruleset flower_gossip {
       ent:status := status
     }
   }
+  
+  rule request_gossip_subscription {
+    select when gossip subscription_needed
+    pre {
+      attrs = event:attrs
+      name = event:attr("name").defaultsTo("Gossip")
+      partner_eci = event:attr("eci")
+      my_eci = Wrangler:myself()["eci"]
+    }      
+    event:send({"eci":my_eci, "eid":subscription, "domain":"wrangler", "type":"subscription",
+                "attrs":{"name": name,
+                        "Rx_role": "node",
+                        "Tx_role": "node",
+                        "channel_type": "subscription",
+                        "wellKnown_Tx": partner_eci
+                }
+    })
+  }
+  
+  rule accept_subscription {
+    select when wrangler inbound_pending_subscription_added
+    
+    always {
+      raise wrangler event "pending_subscription_approval"
+        attributes event:attrs
+    }
+  }
+  
 }
