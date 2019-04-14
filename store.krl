@@ -1,6 +1,11 @@
 ruleset store {
   meta {
     use module io.picolabs.subscription alias Subscriptions
+    use module io.picolabs.wrangler alias Wrangler
+    use module key_module
+    use module twilio alias twilio
+      with account_sid = keys:twilio{"account_sid"}
+        auth_token = keys:twilio{"auth_token"}
     
     shares __testing, getProfile, getOrders
   }
@@ -21,6 +26,18 @@ ruleset store {
     getProfile = function(){ent:profile}
     getOrders = function(){ent:order_tracker}
     // *************************************************************************
+    
+    makeRequest = function(order){
+      {"request": {
+          "orderId": order{"orderId"},
+          "pickUpTime": time:now(),
+          "requiredDeliveryTime": time:add(order{"ordered_at"},{"hours": 2}),
+          "sendBidTo": Wrangler:myself(){"eci"},
+          "storeLocation": ent:profile{"storeLocation"}
+        }
+      }
+    }
+    
   }
   
   rule initialize {
@@ -28,42 +45,73 @@ ruleset store {
   
     always {
       ent:order_tracker := {};
-      ent:profile := {"min_driver_rank": 50, "auto_assign_driver": true};
+      ent:profile := {"min_driver_rank": 50, 
+                      "auto_assign_driver": true, 
+                      "storeLocation":{"lat": 40.251887, "long": -111.649332}};
+      // ent:bid_channel := Wrangler:createChannel(null, "bid_channel", "bid_channel", null)
     }    
   }
   
   rule new_bid {
     select when store new_bid
     
-    noop();
+    pre {
+      orderId = event:attrs{["bid", "orderId"]};
+    }
+    
+    if orderId then noop();
     
     fired {
-      current_bids = ent:order_tracker{[event:attrs{"id"}, "bids"]};
+      current_bids = ent:order_tracker{[orderId, "bids"]};
       updated_bids = current_bids.append({"bid": event:attrs{"bid"}, "received_at": time:now()});
-      ent:order_tracker{[event:attrs{"id"}, "bids"]} := updated_bids;
+      ent:order_tracker{[orderId, "bids"]} := updated_bids;
     }
   }
   
   rule order_delivered {
     select when store order_delivered
+    pre {
+      orderId = event:attrs{["delivery", "orderId"]};
+      delivered_at = event:attrs{["delivery", "delivered_at"]};
+    }
     
+    if orderId && delivered_at then noop()
+    
+    fired {
+      ent:order_tracker{[orderId, "delivered_at"]} := delivered_at;
+    }
   }
   
   rule new_order_received {
-    select when store new_order_received
+    select when store new_order
     
-    noop();
+    pre {
+      orderId = random:uuid();
+      mock_order = {"orderId": orderId, 
+                    "ordered_at": time:now(), 
+                    "cost": event:attrs{"cost"}.decode(),
+                    "urgent": event:attrs{"urgent"}.isnull() => false | event:attrs{"urgent"}.decode()
+      };
+    }
+    
+    if orderId then noop();
     
     fired {
-      ent:order_tracker{event:attrs{"id"}} := {"details": event:attrs, "bids": [], "deliverd_at": null};
-      raise store event "broadcast_new_order" 
+      ent:order_tracker{orderId} := {"details": mock_order, "bids": [], "deliverd_at": null};
+      raise store event "broadcast_new_order" attributes mock_order
     }
   }
   
   rule alert_drivers {
     select when store broadcast_new_order
+    foreach Subscriptions:established("Tx_role", "driver") setting (driver)
+    pre {
+      to_channel = driver{"Tx"};
+      request = makeRequest(event:attrs).klog("REQ")
+    }
     
-    // send driver:delivery_request
+    event:send({"eci": to_channel, "domain":"driver", "type":"delivery_request", "attrs":request});
+
   }
   
   // Helper events *************************************************************
