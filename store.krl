@@ -18,7 +18,8 @@ ruleset store {
       ] , "events":
       [ //{ "domain": "d1", "type": "t1" }
       //, { "domain": "d2", "type": "t2", "attrs": [ "a1", "a2" ] }
-      { "domain": "store", "type": "update_profile", "attrs": ["min_driver_rank", "auto_assign_driver"]}
+      { "domain": "store", "type": "update_profile", "attrs": ["min_driver_rank", "auto_assign_driver"]},
+      { "domain": "store", "type": "update_pulse", "attrs": ["pulse"]}
       ]
     }
     
@@ -40,13 +41,6 @@ ruleset store {
       }
     }
     
-    getRandomBid = function(order){
-      bids = order{"bids"};
-      bids.length() > 0 => 
-        bids[random:integer(bids.length()-1)]
-        | null;
-    }
-    
     getLowestBid = function(order){
       bids = order{"bids"};
       bids.length() > 0 => 
@@ -62,7 +56,8 @@ ruleset store {
     always {
       ent:order_tracker := {};
       ent:profile := {"min_driver_rank": 50, 
-                      "auto_assign_driver": true, 
+                      "auto_assign_driver": true,
+                      "accept_bids_wait_time": 10, // in seconds
                       "storeLocation":{"lat": 40.251887, "long": -111.649332}};
       // ent:bid_channel := Wrangler:createChannel(null, "bid_channel", "bid_channel", null)
       
@@ -74,15 +69,37 @@ ruleset store {
     select when utility pulse
     always {
       schedule utility event "pulse" 
-        at time:add(time:now(), {"seconds": 10}) // probably change this to minutes in a real world scenario
+        at time:add(time:now(), {"seconds":  ent:profile{"accept_bids_wait_time"}}) // probably change this to minutes in a real world scenario
     }
   }
   
+  rule update_profile {
+    select when store update_profile
+    
+    pre {
+      min_driver_rank = event:attrs{"min_driver_rank"}.decode();
+      auto_assign_driver = event:attrs{"auto_assign_driver"}.decode();
+    }
+    
+    always {
+      ent:profile{"min_driver_rank"} := min_driver_rank.isnull() => ent:profile{"min_driver_rank"} | min_driver_rank;
+      ent:profile{"auto_assign_driver"} := auto_assign_driver.isnull() => ent:profile{"auto_assign_driver"} | auto_assign_driver;
+    }
+  }
+  
+  rule update_pulse {
+    select when store update_pulse
+    always{
+      ent:profile{"accept_bids_wait_time"} := event:attrs{"pulse"}.decode();
+    }
+  }
+  // ***************************************************************************
+  
+  // Logic rules ***************************************************************
   rule auto_assign_driver {
     select when utility pulse where ent:profile{"auto_assign_driver"}
     foreach ent:order_tracker.filter(function(v,k){v{"assigned_driver"}.isnull()}) setting (order) // get orders without an assigned_driver
     pre {
-      // selected_bid = getRandomBid(order);
       selected_bid = getLowestBid(order);
     }
     
@@ -104,16 +121,16 @@ ruleset store {
   //  If there was a client for store owners to view and select bids, this rule 
   //  would send them the bids.
   //  This will send bids every ent:check_interval
-  rule analyze_bids {
+  rule send_bids_to_client {
     select when utility pulse where not ent:profile{"auto_assign_driver"}
-    foreach ent:order_tracker setting (order)
+    foreach ent:order_tracker.filter(function(v,k){v{"assigned_driver"}.isnull()}) setting (order)
     pre {
       bids = order{"bids"};
     }
     
     if bids.length() > 0 then
-      event:send({"eci": "SOMECLIENTECI", 
-                  "domain":"driver", "type":"assigned_delivery", 
+      event:send({"eci": "RCjrNbQrWFYBtUYi6PRxpr", // fake client pico - selects random bid
+                  "domain":"client", "type":"bids_available", 
                   "attrs":{"order": order}});
   }
   
@@ -123,8 +140,8 @@ ruleset store {
   rule store_select_bid {
     select when store accepted_bid
     pre {
-      selected_bid = event:attrs{"bid"}
-      order = ent:order_tracker{selected_bid{["bid", "orderId"]}};
+      selected_bid = event:attrs{"bid"}.klog("ACCEPTED_BID")
+      order = ent:order_tracker{selected_bid{["bid", "orderId"]}}.klog("ORDER FROM BID");
     }
     
     if selected_bid then 
@@ -146,23 +163,9 @@ ruleset store {
     
     twilio:send_sms(event:attrs{"to"}, notification_from_phone_number, "Your flower delivery is on its way!")
   }
-  
-  rule update_profile {
-    select when store update_profile
-    
-    pre {
-      min_driver_rank = event:attrs{"min_driver_rank"}.decode();
-      auto_assign_driver = event:attrs{"auto_assign_driver"}.decode();
-    }
-    
-    always {
-      ent:profile{"min_driver_rank"} := min_driver_rank.isnull() => ent:profile{"min_driver_rank"} | min_driver_rank;
-      ent:profile{"auto_assign_driver"} := auto_assign_driver.isnull() => ent:profile{"auto_assign_driver"} | auto_assign_driver;
-    }
-  }
   // ***************************************************************************
   
-  // Public facing rules *************************************************************
+  // Public facing rules *******************************************************
   rule new_bid {
     select when store new_bid
     
