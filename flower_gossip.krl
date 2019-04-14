@@ -27,11 +27,12 @@ ruleset flower_gossip {
       rand = random:integer(1);
       diff = (ent:state{subscriber} == null => ent:rumors.values().map(function(x){x["rumors"][0]})
       | getDifference(ent:state{subscriber}));
-      rand == 1 =>
+      chosen = rand == 1 =>
                 ((diff.length() > 0) =>
                  diff[random:integer(diff.length()-1)]// get the CORRECT rumor, one they hadn't seen before
                  | createSeenMessage()) // If they've seen all your rumors, just send them a seen message
-                 | createSeenMessage()
+                 | createSeenMessage();
+      (rand == 1 && diff.length() > 0) => getLowestSeq(diff, chosen)| chosen
     }
     
     // updates the subscriber's state, assuming m is a rumor message
@@ -54,6 +55,22 @@ ruleset flower_gossip {
     }
 
     // HELPER FUNCTIONS
+    
+    getLowestSeq = function(diff, chosen) {
+      mID = chosen["messageId"];
+      mID_parts = mID.split(re#:#);
+      ogID = mID_parts[0];
+      seq = mID_parts[1].decode();
+      new_diff = diff.filter(function(m) {
+        currmID = m["messageId"];
+        currmID_parts = currmID.split(re#:#);
+        currogID = currmID_parts[0];
+        currseq = currmID_parts[1];
+        ogID == currogID && currseq < seq
+      });
+      
+      (new_diff.length == 0) => chosen | getLowestSeq(new_diff, new_diff[0])
+    }
     
     sendAll = defaction (subscriber, ms, sender) {
       if ms.length() > 0 then
