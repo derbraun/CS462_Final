@@ -17,7 +17,7 @@ Stores listen for - store:new_bid
         "driver_channel": "string" // 
         "orderId" : "string",
         "bidAmount": "number",
-        "driverRank": "number" // 0 - 100? 
+        "driverRank": "number" // 0 - 100 
     }
 }
 
