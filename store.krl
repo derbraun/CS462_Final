@@ -117,7 +117,7 @@ ruleset store {
     }
   }
   
-  // This rule won't actually do anything.
+  // This rule uses a fake client to demonstraite a store that doesn't use auto-assign.
   //  If there was a client for store owners to view and select bids, this rule 
   //  would send them the bids.
   //  This will send bids every ent:check_interval
@@ -134,14 +134,13 @@ ruleset store {
                   "attrs":{"order": order}});
   }
   
-  // This rule won't actually do anything.
   //  If there was a client for store owners to view and select bids, this rule 
   //  would get the accepted bid from the client and go from there.
   rule store_select_bid {
     select when store accepted_bid
     pre {
-      selected_bid = event:attrs{"bid"}.klog("ACCEPTED_BID")
-      order = ent:order_tracker{selected_bid{["bid", "orderId"]}}.klog("ORDER FROM BID");
+      selected_bid = event:attrs{"bid"}
+      order = ent:order_tracker{selected_bid{["bid", "orderId"]}};
     }
     
     if selected_bid then 
