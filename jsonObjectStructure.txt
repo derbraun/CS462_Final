@@ -14,6 +14,7 @@ Bid
 Stores listen for - store:new_bid
 {
     "bid": {
+        "driver_channel": "string" // 
         "orderId" : "string",
         "bidAmount": "number",
         "driverRank": "number" // 0 - 100? 
