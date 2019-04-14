@@ -48,7 +48,7 @@ ruleset store {
     }
     
     getLowestBid = function(order){
-      bids = order{"bids"}.klog("BIDS");
+      bids = order{"bids"};
       bids.length() > 0 => 
         bids.reduce(function(f,s){f{["bid","bidAmoung"]} < s{["bid","bidAmoung"]} => f | s })
         | null;
@@ -100,17 +100,44 @@ ruleset store {
     }
   }
   
+  // This rule won't actually do anything.
+  //  If there was a client for store owners to view and select bids, this rule 
+  //  would send them the bids.
+  //  This will send bids every ent:check_interval
   rule analyze_bids {
     select when utility pulse where not ent:profile{"auto_assign_driver"}
     foreach ent:order_tracker setting (order)
     pre {
-      
+      bids = order{"bids"};
     }
     
-    noop();
+    if bids.length() > 0 then
+      event:send({"eci": "SOMECLIENTECI", 
+                  "domain":"driver", "type":"assigned_delivery", 
+                  "attrs":{"order": order}});
+  }
+  
+  // This rule won't actually do anything.
+  //  If there was a client for store owners to view and select bids, this rule 
+  //  would get the accepted bid from the client and go from there.
+  rule store_select_bid {
+    select when store accepted_bid
+    pre {
+      selected_bid = event:attrs{"bid"}
+      order = ent:order_tracker{selected_bid{["bid", "orderId"]}};
+    }
+    
+    if selected_bid then 
+      event:send({"eci": selected_bid{["bid", "driver_channel"]}, 
+                  "domain":"driver", "type":"assigned_delivery", 
+                  "attrs":{"orderId": order{["details","orderId"]}}});
     
     fired {
-
+      // update order_tracker
+      ent:order_tracker{[order{["details", "orderId"]}, "assigned_driver"]} := selected_bid{["bid", "driver_channel"]};
+      
+      // send twilio message
+      raise utility event "notify_customer" attributes {"to": order{["details", "customer_phone"]}}
     }
   }
   
@@ -143,7 +170,7 @@ ruleset store {
       orderId = event:attrs{["bid", "orderId"]};
     }
     
-    if orderId then noop();
+    if orderId && event:attrs{["bid", "driverRank"]}.as("Number") >= ent:profile{"min_driver_rank"} then noop();
     
     fired {
       current_bids = ent:order_tracker{[orderId, "bids"]};
