@@ -6,7 +6,8 @@ Drivers listen for - driver:delivery_request
         "pickUpTime": "string", // from time:now() in KRL
         "requiredDeliveryTime": "string", // from time:now() in KRL
         "sendBidTo": "string", // stores channel id. Send the bid here
-        "storeLocation": {"lat": "number", "long": "number"}
+        "storeLocation": {"lat": "number", "long": "number"},
+        "maxDistance": "number"
     }
 }
 
