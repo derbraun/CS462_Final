@@ -126,10 +126,11 @@ ruleset store {
     foreach ent:order_tracker.filter(function(v,k){v{"assigned_driver"}.isnull()}) setting (order)
     pre {
       bids = order{"bids"};
+      client_eci = Subscriptions:established("Tx_role", "client")[0]{"Tx"};
     }
     
     if bids.length() > 0 then
-      event:send({"eci": "RCjrNbQrWFYBtUYi6PRxpr", // fake client pico - selects random bid
+      event:send({"eci": client_eci, // fake client pico - selects random bid
                   "domain":"client", "type":"bids_available", 
                   "attrs":{"order": order}});
   }
