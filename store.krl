@@ -187,12 +187,14 @@ ruleset store {
     pre {
       orderId = event:attrs{["delivery", "orderId"]};
       delivered_at = event:attrs{["delivery", "delivered_at"]};
+      image_url = event:attrs{["delivery", "image"]};
     }
     
     if orderId && delivered_at then noop()
     
     fired {
       ent:order_tracker{[orderId, "delivered_at"]} := delivered_at;
+      ent:order_tracker{[orderId, "delivery_image"]} := image_url;
     }
   }
   
