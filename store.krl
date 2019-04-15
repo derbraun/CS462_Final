@@ -36,7 +36,8 @@ ruleset store {
           "pickUpTime": time:now(),
           "requiredDeliveryTime": time:add(order{"ordered_at"},{"hours": 2}),
           "sendBidTo": Wrangler:myself(){"eci"},
-          "storeLocation": ent:profile{"storeLocation"}
+          "storeLocation": ent:profile{"storeLocation"},
+          "maxDistance": ent:profile{"maxDistance"}
         }
       }
     }
@@ -44,7 +45,7 @@ ruleset store {
     getLowestBid = function(order){
       bids = order{"bids"};
       bids.length() > 0 => 
-        bids.reduce(function(f,s){f{["bid","bidAmoung"]} < s{["bid","bidAmoung"]} => f | s })
+        bids.reduce(function(f,s){f{["bid","bidAmount"]} < s{["bid","bidAmount"]} => f | s })
         | null;
     }
   }
@@ -57,8 +58,10 @@ ruleset store {
       ent:order_tracker := {};
       ent:profile := {"min_driver_rank": 50, 
                       "auto_assign_driver": true,
-                      "accept_bids_wait_time": 10, // in seconds
-                      "storeLocation":{"lat": 40.251887, "long": -111.649332}};
+                      "accept_bids_wait_time": 100, // in seconds
+                      "storeLocation":{"lat": 40.251887, "long": -111.649332},
+                      "maxDistance": 5 // only drivers # miles from store
+      };
       // ent:bid_channel := Wrangler:createChannel(null, "bid_channel", "bid_channel", null)
       
       raise utility event "pulse" attributes {"nothing":"nothing"} // have no atributes crashes here sometimes
