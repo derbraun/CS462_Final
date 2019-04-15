@@ -1,6 +1,7 @@
 ruleset fake_client {
   meta {
     shares __testing
+    use module io.picolabs.subscription alias Subscriptions
   }
   global {
     __testing = { "queries":
@@ -26,10 +27,11 @@ ruleset fake_client {
     
     pre {
       bid = getRandomBid(event:attrs{"order"}).klog("BIDS");
+      store_eci = Subscriptions:established("Tx_role", "store")[0]{"Tx"}
     }
     
     if bid then
-      event:send({"eci": "E5msNJU1TkDswBvpNWpqQD", 
+      event:send({"eci": store_eci, 
                   "domain":"store", "type":"accepted_bid", 
                   "attrs":{"bid": bid}});
   }
