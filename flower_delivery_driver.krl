@@ -114,7 +114,7 @@ ruleset flower_delivery_driver {
     }
     
     if event:attrs{"orderId"} then
-      event:send({"eci": request{"sendBidTo"}, 
+      event:send({"eci": ent:pending_bids{["orderId", "sendBidTo"]}, 
                   "domain":"store", "type":"new_bid", 
                   "attrs":{"bid": bid}});
   }
