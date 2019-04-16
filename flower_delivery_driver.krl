@@ -150,6 +150,7 @@ ruleset flower_delivery_driver {
         "rank" : 50,
         "mile_rate": 4
       };
+      ent:deliverying := false;
     }    
   }
   
