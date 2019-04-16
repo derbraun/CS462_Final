@@ -37,7 +37,8 @@ ruleset store {
           "pickUpTime": time:now(),
           "requiredDeliveryTime": time:add(order{"ordered_at"},{"hours": 2}),
           "sendBidTo": Wrangler:myself(){"eci"},
-          "storeLocation": ent:profile{"storeLocation"}
+          "storeLocation": ent:profile{"storeLocation"},
+          "maxDistance": ent:profile{"maxDistance"}
         }
       }
     }
@@ -45,7 +46,7 @@ ruleset store {
     getLowestBid = function(order){
       bids = order{"bids"};
       bids.length() > 0 => 
-        bids.reduce(function(f,s){f{["bid","bidAmoung"]} < s{["bid","bidAmoung"]} => f | s })
+        bids.reduce(function(f,s){f{["bid","bidAmount"]} < s{["bid","bidAmount"]} => f | s })
         | null;
     }
   }
