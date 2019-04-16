@@ -19,7 +19,8 @@ ruleset store {
       [ //{ "domain": "d1", "type": "t1" }
       //, { "domain": "d2", "type": "t2", "attrs": [ "a1", "a2" ] }
       { "domain": "store", "type": "update_profile", "attrs": ["min_driver_rank", "auto_assign_driver"]},
-      { "domain": "store", "type": "update_pulse", "attrs": ["pulse"]}
+      { "domain": "store", "type": "update_pulse", "attrs": ["pulse"]},
+      { "domain": "utility", "type": "update_location", "attrs": ["lat", "long"]}
       ]
     }
     
@@ -36,8 +37,7 @@ ruleset store {
           "pickUpTime": time:now(),
           "requiredDeliveryTime": time:add(order{"ordered_at"},{"hours": 2}),
           "sendBidTo": Wrangler:myself(){"eci"},
-          "storeLocation": ent:profile{"storeLocation"},
-          "maxDistance": ent:profile{"maxDistance"}
+          "storeLocation": ent:profile{"storeLocation"}
         }
       }
     }
@@ -45,7 +45,7 @@ ruleset store {
     getLowestBid = function(order){
       bids = order{"bids"};
       bids.length() > 0 => 
-        bids.reduce(function(f,s){f{["bid","bidAmount"]} < s{["bid","bidAmount"]} => f | s })
+        bids.reduce(function(f,s){f{["bid","bidAmoung"]} < s{["bid","bidAmoung"]} => f | s })
         | null;
     }
   }
@@ -58,10 +58,8 @@ ruleset store {
       ent:order_tracker := {};
       ent:profile := {"min_driver_rank": 50, 
                       "auto_assign_driver": true,
-                      "accept_bids_wait_time": 100, // in seconds
-                      "storeLocation":{"lat": 40.251887, "long": -111.649332},
-                      "maxDistance": 5 // only drivers # miles from store
-      };
+                      "accept_bids_wait_time": 10, // in seconds
+                      "storeLocation":{"lat": 40.251887, "long": -111.649332}};
       // ent:bid_channel := Wrangler:createChannel(null, "bid_channel", "bid_channel", null)
       
       raise utility event "pulse" attributes {"nothing":"nothing"} // have no atributes crashes here sometimes
@@ -94,6 +92,14 @@ ruleset store {
     select when store update_pulse
     always{
       ent:profile{"accept_bids_wait_time"} := event:attrs{"pulse"}.decode();
+    }
+  }
+  
+  rule update_location {
+    select when utility update_location
+    always {
+      ent:profile{["storeLocation", "lat"]} := event:attrs{"lat"};
+      ent:profile{["storeLocation", "long"]} := event:attrs{"long"};
     }
   }
   // ***************************************************************************
@@ -190,14 +196,14 @@ ruleset store {
     pre {
       orderId = event:attrs{["delivery", "orderId"]};
       delivered_at = event:attrs{["delivery", "delivered_at"]};
-      image_url = event:attrs{["delivery", "image"]};
+      delivered_image = event:attrs{["delivery", "image"]};
     }
     
     if orderId && delivered_at then noop()
     
     fired {
       ent:order_tracker{[orderId, "delivered_at"]} := delivered_at;
-      ent:order_tracker{[orderId, "delivery_image"]} := image_url;
+      ent:order_tracker{[orderId, "delivered_image"]} := delivered_image;
     }
   }
   
