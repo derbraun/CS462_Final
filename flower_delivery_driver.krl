@@ -102,6 +102,20 @@ ruleset flower_delivery_driver {
     
   }
   
+  rule assigned {
+    select when driver assigned_delivery
+    pre {
+      order = event:attrs{"orderId"};
+    }
+    
+    if order then SEND_SOMETHING_TO_DRIVER_CLIENT_ALERTING_THEM
+    
+    fired {
+      ent:pending_bids{[orderId, "assigned"]} := true;
+      ent:deliverying := true;
+    }
+  }
+  
   rule delivered {
     select when user order_delivered
     pre {
@@ -117,6 +131,10 @@ ruleset flower_delivery_driver {
       event:send({"eci": ent:pending_bids{["orderId", "request", "sendBidTo"]}, 
                   "domain":"store", "type":"order_delivered", 
                   "attrs":{"delivery": returnObj}});
+         
+    fired {
+      ent:delivering := false;
+    }
   }
   // ***************************************************************************
   
