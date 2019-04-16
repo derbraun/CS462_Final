@@ -97,7 +97,7 @@ ruleset flower_delivery_driver {
                   "domain":"store", "type":"new_bid", 
                   "attrs":{"bid": bid}});
     fired {
-      ent:pending_bids{request{"orderId"}} := {"bid": bid, "origin": request{"sendBidTo"}};
+      ent:pending_bids{request{"orderId"}} := {"bid": bid, "request": request};
     }
     
   }
@@ -114,7 +114,7 @@ ruleset flower_delivery_driver {
     }
     
     if event:attrs{"orderId"} then
-      event:send({"eci": ent:pending_bids{["orderId", "sendBidTo"]}, 
+      event:send({"eci": ent:pending_bids{["orderId", "request", "sendBidTo"]}, 
                   "domain":"store", "type":"order_delivered", 
                   "attrs":{"delivery": returnObj}});
   }
