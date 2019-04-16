@@ -39,9 +39,9 @@ ruleset flower_delivery_driver {
     isWithinMaxRange = function(location, maxDistance){
       origin = location{"lat"} + "," + location{"long"};
       destination = ent:profile{["location", "lat"]} + "," + ent:profile{["location", "long"]};
-      maxDistance = maxDistance * 1609.344; // miles to meters
+      max = maxDistance.as("Number") * 1609.344; // miles to meters
       distance = getDistance(origin, destination); // in meters
-      distance <= maxDistance;
+      distance.as("Number") <= max;
 
     }
     
