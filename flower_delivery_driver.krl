@@ -55,7 +55,7 @@ ruleset flower_delivery_driver {
   
   // Logic rules ***************************************************************
   rule new_order_received {
-    select when driver delivery_request
+    select when driver delivery_request where ent:delivering == false
     pre {
       request = event:attrs{"request"}
       isInRange = isWithinMaxRange(request{"storeLocation"}, request{"maxDistance"})
@@ -71,7 +71,7 @@ ruleset flower_delivery_driver {
   }
   
   rule new_order_reveived_gossip {
-    select when gossip rumor
+    select when gossip rumor where ent:delivering == false
     pre {
       request = event:attrs{"message"}
       already_placed_bid = ent:pending_bids{request{"orderId"}}
