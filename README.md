@@ -1,6 +1,7 @@
-Distributed Fast Flower Delivery Report
-Connor Wilhelm
-Daniel Brown
+# Distributed Fast Flower Delivery Report
+
+Connor Wilhelm,
+Daniel Brown,
 Charlie Oliverson
  
 ## Statement of the problem you were solving
