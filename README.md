@@ -42,7 +42,9 @@ Driver Sends
   Gosip:seen
   ```
 ## Architectural diagram and explanation
-    
+
+![](https://github.com/derbraun/CS462_Final/blob/master/Final%20Architecture%20diagram.jpg)
+
 A store sends a delivery request to all the drivers that it knows about. The drivers then propagate the delivery request to all other drivers via gossip protocol. Each driver then uses the Google Distance Matrix API to determine whether or not it is close enough to the delivery destination to make the delivery on time. If and only if it is close enough does a driver send a driving bid back to the store. The store then weighs all of the bids and determines which one will deliver the order. The store then communicates with only that driver, informing them that it has won the bid and will deliver the flower order. At the same time, a SMS is sent via the Twilio API to the customer, informing them that the order has been scheduled for delivery. Once the driver has delivered the order, a notification is sent back to the store, informing them that the delivery has been completed.
 
 In the diagram, the different requests have been color coded.
