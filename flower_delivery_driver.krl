@@ -97,9 +97,26 @@ ruleset flower_delivery_driver {
                   "domain":"store", "type":"new_bid", 
                   "attrs":{"bid": bid}});
     fired {
-      ent:pending_bids{request{"orderId"}} := bid;
+      ent:pending_bids{request{"orderId"}} := {"bid": bid, "origin": request{"sendBidTo"}};
     }
     
+  }
+  
+  rule delivered {
+    select when user order_delivered
+    pre {
+      returnObj = { "delivery": {
+                      "orderId": event:attrs{"orderId"},
+                      "delivered_at": "Sometime",
+                      "image": "AnImage"
+                      } 
+                  };
+    }
+    
+    if event:attrs{"orderId"} then
+      event:send({"eci": request{"sendBidTo"}, 
+                  "domain":"store", "type":"new_bid", 
+                  "attrs":{"bid": bid}});
   }
   // ***************************************************************************
   
